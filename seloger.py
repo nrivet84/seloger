@@ -3,16 +3,33 @@
 
 @author: Nicolas Rivet
 """
+import configparser
 
 import requests
 from lxml import etree as ET
 
 api_url='http://ws.seloger.com'
 
+def define_search(title):
+    """
+    cp, nb_pieces, nb_chambres, pxmin, pxmax, surfacemin=define_search('Paris_1-5')
+    """
+    config = configparser.ConfigParser()
+    config.read('mysearch.ini')
+
+    return config[title]['cp'], \
+            config[title]['nb_pieces'], \
+            config[title]['nb_chambres'], \
+            config[title]['pxmin'], \
+            config[title]['pxmax'], \
+            config[title]['surfacemin']
+
+
 def search_buy(cp, nb_pieces=0, nb_chambres=0, pxmin=0, pxmax=0, surfacemin=0):
     """
     r=search_buy(75001, '4,+5', '3,4', 500000, 800000,70)
     xml=r.content
+    r=search_buy(cp, nb_pieces, nb_chambres, pxmin, pxmax, surfacemin)
     """
     api_endpoint=api_url + '/search.xml?idtt=2&cp=' + str(cp)
     if nb_pieces!=0:
@@ -24,14 +41,13 @@ def search_buy(cp, nb_pieces=0, nb_chambres=0, pxmin=0, pxmax=0, surfacemin=0):
     if pxmax!=0:
         api_endpoint=api_endpoint + '&pxmax=' + str(pxmax)
     if surfacemin!=0:
-        api_endpoint=api_endpoint + '&surfacemin!=' + str(surfacemin)
+        api_endpoint=api_endpoint + '&surfacemin=' + str(surfacemin)
         
     print(api_endpoint)
      
     response = requests.get(api_endpoint)
     return response
 
-    
     
 def look_search(xml):
     
@@ -40,7 +56,11 @@ def look_search(xml):
     annonces=[]
     for annonce in idAnnonces:
         annonces.append(annonce.text)
-    return annonces
+    dtFraicheurs=tree.xpath('//recherche//annonces//annonce//dtFraicheur')
+    dts=[]
+    for dt in dtFraicheurs:
+        dts.append(dt.text)
+    return annonces, dts
     
 """
 POST https://outlook.office.com/api/v2.0/me/sendmail
